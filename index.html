@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Ti · запись</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#faf6f4;
+  --bg2:#f3ebe7;
+  --card:#ffffff;
+  --ink:#3d3330;
+  --mute:#9a8b84;
+  --line:#efe6e1;
+  --rose:#e8b4b8;
+  --rose-deep:#c98b90;
+  --blush:#f5e4e6;
+  --champagne:#d4c0b0;
+  --ok:#7a9e8a;
+}
+html,body{min-height:100%}
+body{
+  font-family:'Manrope',system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);
+  padding:0 0 calc(24px + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust:100%;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 100% 50% at 50% -10%,rgba(232,180,184,.35),transparent 55%),
+    radial-gradient(ellipse 80% 40% at 100% 60%,rgba(245,228,230,.4),transparent 45%),
+    linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+}
+.wrap{position:relative;z-index:1;max-width:400px;margin:0 auto;padding:28px 20px 8px}
+
+/* hero */
+.hero{text-align:center;margin-bottom:26px}
+.logo-wrap{position:relative;width:88px;height:88px;margin:0 auto 16px}
+.logo{
+  width:88px;height:88px;border-radius:50%;
+  background:linear-gradient(145deg,#f8eef0 0%,#e8b4b8 45%,#d4a5a9 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:
+    0 12px 32px rgba(201,139,144,.28),
+    inset 0 1px 0 rgba(255,255,255,.65);
+  border:1px solid rgba(255,255,255,.7);
+}
+.logo span{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:36px;font-weight:600;color:#fff;
+  text-shadow:0 1px 2px rgba(150,100,105,.25);letter-spacing:.04em;
+}
+.logo-ring{
+  position:absolute;inset:-6px;border-radius:50%;
+  border:1px solid rgba(232,180,184,.45);pointer-events:none;
+}
+.hero h1{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:32px;font-weight:600;letter-spacing:.12em;
+  color:var(--ink);font-weight:500;
+}
+.hero .line{
+  width:40px;height:1px;margin:10px auto;
+  background:linear-gradient(90deg,transparent,var(--rose-deep),transparent);
+}
+.hero p{font-size:13px;color:var(--mute);letter-spacing:.04em;font-weight:400}
+
+/* cards */
+.card{
+  background:var(--card);
+  border-radius:20px;padding:22px 18px;
+  margin-bottom:14px;
+  box-shadow:0 4px 24px rgba(61,51,48,.04),0 1px 0 rgba(255,255,255,.8);
+  border:1px solid rgba(255,255,255,.9);
+}
+.card h2{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:18px;font-weight:600;letter-spacing:.06em;
+  color:var(--ink);margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.card h2::after{
+  content:'';flex:1;height:1px;background:var(--line);
+}
+
+/* services */
+.services{display:flex;flex-direction:column;gap:10px}
+.svc{
+  display:flex;align-items:center;gap:14px;padding:14px 14px;
+  border-radius:16px;border:1px solid var(--line);
+  background:linear-gradient(180deg,#fff,#faf8f7);
+  cursor:pointer;text-align:left;width:100%;
+  font-family:inherit;color:inherit;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.svc.active{
+  border-color:var(--rose);
+  background:linear-gradient(135deg,#fff5f6,#fff);
+  box-shadow:0 4px 16px rgba(232,180,184,.2);
+}
+.svc .dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid var(--champagne);background:transparent;
+}
+.svc.active .dot{
+  background:var(--rose-deep);border-color:var(--rose-deep);
+  box-shadow:0 0 0 3px rgba(232,180,184,.35);
+}
+.svc strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+.svc em{display:block;font-size:12px;font-style:normal;color:var(--mute);margin-top:2px}
+.svc .price{
+  margin-left:auto;font-size:13px;font-weight:600;
+  color:var(--rose-deep);white-space:nowrap;
+}
+
+/* form */
+label{
+  display:block;font-size:11px;font-weight:500;color:var(--mute);
+  letter-spacing:.06em;text-transform:uppercase;margin:14px 0 7px;
+}
+label:first-of-type{margin-top:0}
+input,select,textarea{
+  width:100%;padding:13px 15px;border-radius:14px;
+  border:1px solid var(--line);background:#faf8f7;
+  font-family:inherit;font-size:15px;color:var(--ink);outline:none;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+  -webkit-appearance:none;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--rose);
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(232,180,184,.2);
+}
+textarea{min-height:76px;resize:none}
+input::placeholder,textarea::placeholder{color:#c4b8b2}
+
+.slots{display:flex;flex-wrap:wrap;gap:8px}
+.slot{
+  padding:11px 16px;border-radius:100px;
+  border:1px solid var(--line);background:#fff;
+  font-size:13px;font-weight:500;font-family:inherit;
+  color:var(--ink);cursor:pointer;
+  transition:all .15s;
+}
+.slot.active{
+  border-color:var(--rose-deep);
+  background:linear-gradient(135deg,#e8b4b8,#c98b90);
+  color:#fff;
+  box-shadow:0 4px 12px rgba(201,139,144,.3);
+}
+
+.btn{
+  width:100%;margin-top:18px;padding:16px;
+  border:none;border-radius:100px;
+  background:linear-gradient(135deg,#e8b4b8 0%,#c98b90 100%);
+  color:#fff;font-size:15px;font-weight:600;font-family:inherit;
+  letter-spacing:.04em;cursor:pointer;
+  box-shadow:0 10px 28px rgba(201,139,144,.35);
+  transition:transform .12s,opacity .12s;
+}
+.btn:active{transform:scale(.98);opacity:.92}
+
+.admin-link{
+  display:block;text-align:center;margin-top:18px;
+  font-size:12px;color:var(--mute);text-decoration:none;
+  letter-spacing:.04em;
+}
+.admin{display:none;margin-top:12px}
+.admin.show{display:block}
+.book-item{
+  padding:14px;border-radius:14px;background:#faf8f7;
+  border:1px solid var(--line);margin-bottom:8px;font-size:13px;
+}
+.book-item strong{display:block;margin-bottom:4px;font-weight:600}
+.book-item span{color:var(--mute);font-size:12px;line-height:1.4}
+
+
+/* soft florals */
+.florals{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.florals svg{position:absolute;opacity:.22}
+.florals .f1{width:140px;height:140px;top:-20px;right:-30px;opacity:.28}
+.florals .f2{width:100px;height:100px;bottom:12%;left:-24px;opacity:.18;transform:rotate(-25deg)}
+.florals .f3{width:70px;height:70px;top:38%;right:6px;opacity:.14;transform:rotate(15deg)}
+.petal-line{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin:8px 0 4px;color:var(--rose-deep);opacity:.55;
+}
+.petal-line span{font-size:10px;letter-spacing:.2em}
+.hero .bloom{
+  position:absolute;width:18px;height:18px;border-radius:50% 0 50% 50%;
+  background:rgba(232,180,184,.45);transform:rotate(-20deg);
+}
+.logo-wrap .bloom.b1{top:2px;right:-4px}
+.logo-wrap .bloom.b2{bottom:6px;left:-6px;width:12px;height:12px;background:rgba(212,192,176,.5);transform:rotate(40deg)}
+.card.flower-edge{position:relative;overflow:hidden}
+.card.flower-edge::before{
+  content:'';position:absolute;top:-20px;right:-16px;width:64px;height:64px;
+  background:radial-gradient(circle at 30% 30%,rgba(232,180,184,.35),transparent 65%);
+  border-radius:50%;pointer-events:none;
+}
+.card.flower-edge::after{
+  content:'❀';position:absolute;bottom:8px;right:12px;font-size:14px;
+  color:rgba(201,139,144,.22);pointer-events:none;
+}
+
+.foot{
+  text-align:center;margin-top:24px;
+  font-size:11px;color:#c4b8b2;letter-spacing:.08em;
+}
+
+/* success */
+.overlay{
+  display:none;position:fixed;inset:0;z-index:50;
+  background:rgba(61,51,48,.35);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:24px;
+}
+.overlay.show{display:flex}
+.popup{
+  background:#fff;border-radius:24px;padding:32px 24px;text-align:center;
+  max-width:320px;width:100%;
+  box-shadow:0 24px 60px rgba(61,51,48,.15);
+  border:1px solid rgba(255,255,255,.8);
+}
+.popup .check{
+  width:64px;height:64px;margin:0 auto 16px;border-radius:50%;
+  background:linear-gradient(145deg,#f5e4e6,#e8b4b8);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:26px;box-shadow:0 8px 20px rgba(232,180,184,.4);
+}
+.popup h3{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:24px;font-weight:600;margin-bottom:8px;
+}
+.popup p{font-size:13px;color:var(--mute);line-height:1.55;margin-bottom:20px}
+.popup button{
+  padding:12px 32px;border-radius:100px;border:none;
+  background:var(--blush);color:var(--ink);
+  font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="florals" aria-hidden="true">
+  <svg class="f1" viewBox="0 0 120 120" fill="none">
+    <g fill="#e8b4b8">
+      <ellipse cx="60" cy="42" rx="14" ry="28" transform="rotate(0 60 60)" opacity=".9"/>
+      <ellipse cx="60" cy="42" rx="14" ry="28" transform="rotate(60 60 60)" opacity=".85"/>
+      <ellipse cx="60" cy="42" rx="14" ry="28" transform="rotate(120 60 60)" opacity=".8"/>
+      <ellipse cx="60" cy="42" rx="14" ry="28" transform="rotate(180 60 60)" opacity=".85"/>
+      <ellipse cx="60" cy="42" rx="14" ry="28" transform="rotate(240 60 60)" opacity=".8"/>
+      <ellipse cx="60" cy="42" rx="14" ry="28" transform="rotate(300 60 60)" opacity=".85"/>
+      <circle cx="60" cy="60" r="10" fill="#f5e4e6"/>
+      <circle cx="60" cy="60" r="5" fill="#c98b90" opacity=".7"/>
+    </g>
+  </svg>
+  <svg class="f2" viewBox="0 0 120 120" fill="none">
+    <g fill="#d4c0b0">
+      <ellipse cx="60" cy="40" rx="12" ry="26" transform="rotate(30 60 60)"/>
+      <ellipse cx="60" cy="40" rx="12" ry="26" transform="rotate(90 60 60)"/>
+      <ellipse cx="60" cy="40" rx="12" ry="26" transform="rotate(150 60 60)"/>
+      <ellipse cx="60" cy="40" rx="12" ry="26" transform="rotate(210 60 60)"/>
+      <ellipse cx="60" cy="40" rx="12" ry="26" transform="rotate(270 60 60)"/>
+      <ellipse cx="60" cy="40" rx="12" ry="26" transform="rotate(330 60 60)"/>
+      <circle cx="60" cy="60" r="9" fill="#faf6f4"/>
+    </g>
+  </svg>
+  <svg class="f3" viewBox="0 0 120 120" fill="none">
+    <g fill="#e8b4b8">
+      <ellipse cx="60" cy="44" rx="11" ry="22" transform="rotate(0 60 60)"/>
+      <ellipse cx="60" cy="44" rx="11" ry="22" transform="rotate(72 60 60)"/>
+      <ellipse cx="60" cy="44" rx="11" ry="22" transform="rotate(144 60 60)"/>
+      <ellipse cx="60" cy="44" rx="11" ry="22" transform="rotate(216 60 60)"/>
+      <ellipse cx="60" cy="44" rx="11" ry="22" transform="rotate(288 60 60)"/>
+      <circle cx="60" cy="60" r="8" fill="#f5e4e6"/>
+    </g>
+  </svg>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="logo-wrap">
+      <div class="logo-ring"></div>
+      <span class="bloom b1"></span>
+      <span class="bloom b2"></span>
+      <div class="logo"><span>Ti</span></div>
+    </div>
+    <h1>Ti</h1>
+    <div class="line"></div>
+    <p>брови · запись online</p>
+    <div class="petal-line"><span>✿</span><span>···</span><span>✿</span></div>
+  </header>
+
+  <section class="card flower-edge">
+    <h2>Услуга</h2>
+    <div class="services" id="services">
+      <button type="button" class="svc active" data-svc="Коррекция бровей" data-price="1500">
+        <span class="dot"></span>
+        <div><strong>Коррекция бровей</strong><em>форма и окрашивание</em></div>
+        <span class="price">1 500 ₽</span>
+      </button>
+      <button type="button" class="svc" data-svc="Архитектура бровей" data-price="2000">
+        <span class="dot"></span>
+        <div><strong>Архитектура бровей</strong><em>подбор формы с нуля</em></div>
+        <span class="price">2 000 ₽</span>
+      </button>
+      <button type="button" class="svc" data-svc="Ламинирование" data-price="2500">
+        <span class="dot"></span>
+        <div><strong>Ламинирование</strong><em>долговременный уход</em></div>
+        <span class="price">2 500 ₽</span>
+      </button>
+      <button type="button" class="svc" data-svc="Консультация" data-price="0">
+        <span class="dot"></span>
+        <div><strong>Консультация</strong><em>online · 15 минут</em></div>
+        <span class="price">бесплатно</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="card flower-edge">
+    <h2>Когда</h2>
+    <label for="date">День</label>
+    <input type="date" id="date" required>
+    <label>Время</label>
+    <div class="slots" id="slots">
+      <button type="button" class="slot" data-t="10:00">10:00</button>
+      <button type="button" class="slot" data-t="11:30">11:30</button>
+      <button type="button" class="slot" data-t="13:00">13:00</button>
+      <button type="button" class="slot" data-t="15:00">15:00</button>
+      <button type="button" class="slot" data-t="17:00">17:00</button>
+      <button type="button" class="slot" data-t="19:00">19:00</button>
+    </div>
+  </section>
+
+  <section class="card flower-edge">
+    <h2>О вас</h2>
+    <label for="name">Имя</label>
+    <input type="text" id="name" placeholder="Как к вам обращаться" maxlength="60" autocomplete="name">
+    <label for="phone">Телефон</label>
+    <input type="tel" id="phone" placeholder="+7" maxlength="20" autocomplete="tel">
+    <label for="note">Комментарий</label>
+    <textarea id="note" placeholder="Пожелания к записи" maxlength="200"></textarea>
+    <button type="button" class="btn" id="submit">Записаться</button>
+  </section>
+
+  <a href="#" class="admin-link" id="admin-toggle">мои записи · демо</a>
+  <div class="admin" id="admin">
+    <div class="card">
+      <h2>Записи</h2>
+      <div id="book-list"><p style="color:var(--mute);font-size:13px">Пока пусто</p></div>
+    </div>
+  </div>
+
+  <p class="foot">Ti · beauty · demo v0.1</p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="popup">
+    <div class="check">✓</div>
+    <h3>Вы записаны</h3>
+    <p id="ok-text">Скоро мастер подтвердит визит. В полной версии уведомление придёт ей в Telegram.</p>
+    <button type="button" id="ok-close">Отлично</button>
+  </div>
+</div>
+
+<script>
+if(window.Telegram&&Telegram.WebApp){try{Telegram.WebApp.ready();Telegram.WebApp.expand();try{Telegram.WebApp.setHeaderColor('#faf6f4');Telegram.WebApp.setBackgroundColor('#faf6f4')}catch(e){}}catch(e){}}
+
+var svc='Коррекция бровей',price=1500,time='';
+var KEY='ti_bookings_v1';
+function storage(){try{localStorage.setItem('_','1');localStorage.removeItem('_');return localStorage}catch(e){return{d:{},getItem:function(k){return this.d[k]||null},setItem:function(k,v){this.d[k]=String(v)}}}}
+var store=storage();
+
+(function(){var d=new Date(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');var el=document.getElementById('date');el.min=d.getFullYear()+'-'+m+'-'+day;el.value=el.min})();
+
+document.getElementById('services').addEventListener('click',function(e){
+  var b=e.target.closest('.svc');if(!b)return;
+  document.querySelectorAll('.svc').forEach(function(x){x.classList.remove('active')});
+  b.classList.add('active');svc=b.getAttribute('data-svc');price=+b.getAttribute('data-price')||0;
+});
+document.getElementById('slots').addEventListener('click',function(e){
+  var b=e.target.closest('.slot');if(!b)return;
+  document.querySelectorAll('.slot').forEach(function(x){x.classList.remove('active')});
+  b.classList.add('active');time=b.getAttribute('data-t');
+});
+
+function loadList(){
+  var list=[];try{list=JSON.parse(store.getItem(KEY)||'[]')}catch(e){}
+  var box=document.getElementById('book-list');
+  if(!list.length){box.innerHTML='<p style="color:var(--mute);font-size:13px">Пока пусто</p>';return}
+  box.innerHTML=list.slice().reverse().map(function(b){
+    return '<div class="book-item"><strong>'+b.name+' · '+b.svc+'</strong><span>'+b.date+' в '+b.time+' · '+b.phone+(b.note?' · '+b.note:'')+'</span></div>';
+  }).join('');
+}
+
+document.getElementById('submit').onclick=function(){
+  var name=(document.getElementById('name').value||'').trim();
+  var phone=(document.getElementById('phone').value||'').trim();
+  var note=(document.getElementById('note').value||'').trim();
+  var date=document.getElementById('date').value;
+  if(!date){alert('Выберите день');return}
+  if(!time){alert('Выберите время');return}
+  if(!name){alert('Укажите имя');return}
+  if(!phone){alert('Укажите телефон');return}
+  var row={id:Date.now(),svc:svc,price:price,date:date,time:time,name:name,phone:phone,note:note,at:new Date().toISOString()};
+  var list=[];try{list=JSON.parse(store.getItem(KEY)||'[]')}catch(e){}
+  list.push(row);try{store.setItem(KEY,JSON.stringify(list))}catch(e){}
+  document.getElementById('ok-text').textContent=name+', вы записаны на «'+svc+'» · '+date+' в '+time+'. В полной версии Ti получит уведомление в Telegram.';
+  document.getElementById('overlay').classList.add('show');
+  loadList();
+  try{if(Telegram&&Telegram.WebApp&&Telegram.WebApp.HapticFeedback)Telegram.WebApp.HapticFeedback.notificationOccurred('success')}catch(e){}
+};
+document.getElementById('ok-close').onclick=function(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('name').value='';document.getElementById('phone').value='';document.getElementById('note').value='';
+};
+document.getElementById('admin-toggle').onclick=function(e){e.preventDefault();document.getElementById('admin').classList.toggle('show');loadList()};
+loadList();
+</script>
+</body>
+</html>
