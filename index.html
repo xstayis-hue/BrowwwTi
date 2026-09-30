@@ -48,12 +48,22 @@ body::after{
 }
 .cyber-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .cyber-bg .grid{
-  position:absolute;inset:0;opacity:.1;
+  position:absolute;inset:-20%;width:140%;height:140%;opacity:.12;
   background-image:
     linear-gradient(rgba(180,120,150,.4) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(155,123,255,.22) 1px,transparent 1px);
+    linear-gradient(90deg,rgba(155,123,255,.25) 1px,transparent 1px);
   background-size:36px 36px;
   mask-image:radial-gradient(ellipse 80% 70% at 50% 30%,#000 15%,transparent 75%);
+  animation:grid-drift 28s linear infinite;
+  will-change:transform;
+}
+@keyframes grid-drift{
+  0%{transform:translate(0,0)}
+  100%{transform:translate(-36px,-36px)}
+}
+.cyber-bg .parallax-layer{
+  position:absolute;inset:0;will-change:transform;
+  transition:transform .15s ease-out;
 }
 .cyber-bg .orb{
   position:absolute;border-radius:50%;filter:blur(48px);opacity:.4;
@@ -70,6 +80,13 @@ body::after{
 .wrap{position:relative;z-index:1;max-width:400px;margin:0 auto;padding:22px 16px 16px}
 
 /* status bar */
+.snd-toggle{
+  position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:40;
+  width:42px;height:42px;border-radius:50%;border:1px solid rgba(155,123,255,.35);
+  background:rgba(20,16,15,.75);color:var(--ink);font-size:16px;cursor:pointer;
+  backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,.35);
+}
+.snd-toggle.off{opacity:.45}
 .status-bar{
   display:flex;align-items:center;justify-content:center;gap:8px;
   margin-bottom:14px;font-size:11px;color:var(--mute);letter-spacing:.06em;
@@ -345,7 +362,8 @@ input::placeholder,textarea::placeholder{color:#6a5a56}
 </div>
 
 <div class="wrap">
-  <div class="status-bar"><span class="dot"></span> online · запись открыта</div>
+  <button type="button" class="snd-toggle" id="snd-toggle" title="звук">♪</button>
+<div class="status-bar"><span class="dot"></span> online · запись открыта</div>
 
   <header class="hero">
     <div class="logo-wrap">
@@ -751,6 +769,7 @@ document.getElementById('submit').onclick = function () {
   try {
     if (Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback)
       Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    sfxSuccess();
   } catch (e) {}
 
   var tgUser = (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) || {};
@@ -774,6 +793,82 @@ document.getElementById('admin-toggle').onclick = function (e) {
 };
 
 try { if (store.getItem('ti_pending') === '1') document.getElementById('pending-banner').classList.add('show'); } catch (e) {}
+
+
+/* —— parallax —— */
+(function(){
+  var orbs=document.getElementById('orb-layer');
+  var grid=document.getElementById('grid-layer');
+  if(!orbs)return;
+  var tx=0,ty=0,cx=0,cy=0;
+  function onMove(x,y){
+    var nx=(x/window.innerWidth-0.5)*2;
+    var ny=(y/window.innerHeight-0.5)*2;
+    tx=nx*14;ty=ny*10;
+  }
+  window.addEventListener('mousemove',function(e){onMove(e.clientX,e.clientY)},{passive:true});
+  window.addEventListener('deviceorientation',function(e){
+    if(e.gamma==null)return;
+    tx=(e.gamma/45)*16;ty=((e.beta||0)-45)/45*12;
+  });
+  window.addEventListener('scroll',function(){
+    var s=window.scrollY||0;
+    if(grid)grid.style.transform='translate('+(s*-0.02)+'px,'+(s*-0.04)+'px)';
+  },{passive:true});
+  (function tick(){
+    cx+=(tx-cx)*0.08;cy+=(ty-cy)*0.08;
+    orbs.style.transform='translate('+cx+'px,'+cy+'px)';
+    requestAnimationFrame(tick);
+  })();
+})();
+
+/* —— soft UI sounds (Web Audio, no files) —— */
+var SND_ON=true;
+try{if(localStorage.getItem('ti_snd')==='0')SND_ON=false}catch(e){}
+var audioCtx=null;
+function ensureAudio(){
+  if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq,dur,type,vol,delay){
+  if(!SND_ON)return;
+  var ctx=ensureAudio();if(!ctx)return;
+  var t=ctx.currentTime+(delay||0);
+  var o=ctx.createOscillator();
+  var g=ctx.createGain();
+  o.type=type||'sine';
+  o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol||0.04,t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.08));
+  o.connect(g);g.connect(ctx.destination);
+  o.start(t);o.stop(t+(dur||0.08)+0.02);
+}
+function sfxTap(){tone(520,0.05,'sine',0.03);tone(780,0.04,'triangle',0.02,0.02)}
+function sfxSelect(){tone(440,0.06,'sine',0.035);tone(660,0.08,'triangle',0.025,0.03)}
+function sfxSuccess(){tone(523,0.08,'sine',0.04);tone(659,0.1,'sine',0.035,0.07);tone(784,0.14,'triangle',0.03,0.14)}
+function sfxStar(){tone(880,0.07,'triangle',0.04);tone(1320,0.06,'sine',0.025,0.04)}
+
+(function(){
+  var btn=document.getElementById('snd-toggle');
+  if(!btn)return;
+  function sync(){btn.textContent=SND_ON?'♪':'♪̸';btn.classList.toggle('off',!SND_ON)}
+  sync();
+  btn.onclick=function(){
+    SND_ON=!SND_ON;
+    try{localStorage.setItem('ti_snd',SND_ON?'1':'0')}catch(e){}
+    if(SND_ON){ensureAudio();sfxTap()}
+    sync();
+  };
+})();
+
+/* hook existing interactions */
+document.getElementById('services').addEventListener('click',function(e){if(e.target.closest('.svc'))sfxSelect()});
+document.getElementById('slots').addEventListener('click',function(e){if(e.target.closest('.slot'))sfxTap()});
+document.getElementById('stars').addEventListener('click',function(e){if(e.target.closest('button'))sfxStar()});
+var _sub=document.getElementById('submit').onclick;
+document.getElementById('submit').addEventListener('click',function(){/* success plays after validation in handler */});
 
 updateProgress();
 loadGallery();
