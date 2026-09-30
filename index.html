@@ -334,6 +334,47 @@ input::placeholder,textarea::placeholder{color:#6a5a56}
 .book-item{padding:12px;border-radius:14px;background:rgba(22,18,17,.55);margin-bottom:8px;font-size:13px;border:1px solid rgba(180,120,130,.25)}
 .book-item strong{display:block;margin-bottom:3px}
 .book-item span{color:var(--mute);font-size:12px}
+
+/* —— кабинет Ti —— */
+.cab-link{
+  display:block;text-align:center;margin:8px 0 4px;font-size:11px;color:#6a5a56;
+  text-decoration:none;letter-spacing:.06em;opacity:.7;
+}
+.cab-panel{display:none;margin:12px 0 20px}
+.cab-panel.show{display:block}
+.cab-tabs{display:flex;gap:6px;margin-bottom:12px}
+.cab-tabs button{
+  flex:1;padding:10px 6px;border-radius:12px;border:1px solid rgba(155,123,255,.25);
+  background:rgba(22,18,17,.6);color:var(--mute);font-size:11px;font-weight:650;
+  font-family:inherit;cursor:pointer;letter-spacing:.03em;
+}
+.cab-tabs button.on{
+  color:#fff;background:linear-gradient(135deg,rgba(155,123,255,.35),rgba(212,154,159,.25));
+  border-color:rgba(155,123,255,.5);
+}
+.cab-login{display:flex;flex-direction:column;gap:10px}
+.cab-item{
+  padding:12px;border-radius:14px;background:rgba(22,18,17,.55);
+  border:1px solid rgba(180,120,130,.25);margin-bottom:8px;font-size:13px;
+}
+.cab-item strong{display:block;margin-bottom:4px}
+.cab-item .meta{color:var(--mute);font-size:12px;line-height:1.4;margin-bottom:8px}
+.cab-actions{display:flex;gap:8px}
+.cab-actions button{
+  flex:1;padding:10px;border-radius:12px;border:none;font-family:inherit;font-weight:650;
+  font-size:12px;cursor:pointer;
+}
+.cab-ok{background:rgba(61,206,165,.2);color:#3dcea5;border:1px solid rgba(61,206,165,.35)!important}
+.cab-no{background:rgba(224,112,112,.15);color:#e07070;border:1px solid rgba(224,112,112,.3)!important}
+.cab-up label.field{margin-top:10px}
+.cab-up .row{display:flex;gap:8px}
+.cab-up .row button{flex:1}
+.cab-kind button{
+  flex:1;padding:10px;border-radius:12px;border:1px solid rgba(180,120,130,.3);
+  background:rgba(22,18,17,.6);color:var(--mute);font-family:inherit;font-size:12px;font-weight:650;cursor:pointer;
+}
+.cab-kind button.on{color:#fff;border-color:rgba(155,123,255,.5);background:rgba(155,123,255,.2)}
+
 .foot{text-align:center;margin-top:16px;font-size:11px;color:#5a4e4a;letter-spacing:.1em}
 
 .overlay{display:none;position:fixed;inset:0;z-index:50;background:rgba(8,6,6,.7);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:24px}
@@ -482,6 +523,40 @@ input::placeholder,textarea::placeholder{color:#6a5a56}
     </div>
   </section>
 
+  
+  <a href="#" class="cab-link" id="cab-open">кабинет Ti</a>
+  <div class="cab-panel" id="cab-panel">
+    <div class="card" id="cab-card">
+      <div id="cab-auth" class="cab-login">
+        <label class="field">Пароль кабинета</label>
+        <input type="password" id="cab-pass" placeholder="пароль" autocomplete="current-password">
+        <button type="button" class="btn" id="cab-login-btn" style="margin-top:4px">Войти</button>
+      </div>
+      <div id="cab-body" style="display:none">
+        <div class="cab-tabs">
+          <button type="button" class="on" data-tab="books">Записи</button>
+          <button type="button" data-tab="revs">Отзывы</button>
+          <button type="button" data-tab="photos">Работы</button>
+        </div>
+        <div id="cab-books"></div>
+        <div id="cab-revs" style="display:none"></div>
+        <div id="cab-photos" style="display:none" class="cab-up">
+          <div class="cab-kind" id="cab-kind">
+            <button type="button" class="on" data-k="before">До</button>
+            <button type="button" data-k="after">После</button>
+            <button type="button" data-k="work">Работа</button>
+          </div>
+          <label class="field">Фото</label>
+          <input type="file" id="cab-file" accept="image/*">
+          <label class="field">Подпись</label>
+          <input type="text" id="cab-cap" maxlength="80" placeholder="необязательно">
+          <button type="button" class="btn" id="cab-upload" style="margin-top:12px">Загрузить в галерею</button>
+          <p class="rev-note" id="cab-up-status"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <p class="foot">Ti · beauty</p>
 </div>
 
@@ -580,8 +655,11 @@ function postAction(payload, cb) {
   }
 }
 
-function loadPhoto(fileId, cb) {
-  if (!TI_SCRIPT_URL || !fileId) { cb(''); return; }
+function loadPhoto(item, cb) {
+  if (!item) { cb(''); return; }
+  if (item.url) { cb(item.url); return; }
+  var fileId = item.file_id || item;
+  if (typeof fileId !== 'string' || !fileId || !TI_SCRIPT_URL) { cb(''); return; }
   fetch(TI_SCRIPT_URL + '?action=photo&file_id=' + encodeURIComponent(fileId))
     .then(function (r) { return r.text(); })
     .then(function (b64) {
@@ -652,17 +730,17 @@ function loadGallery() {
       if (b && a) {
         var loaded = 0;
         var bSrc = '', aSrc = '';
-        loadPhoto(b.file_id, function (src) {
+        loadPhoto(b, function (src) {
           bSrc = src; loaded++;
           if (loaded === 2) setupBA(bSrc || aSrc, aSrc || bSrc);
         });
-        loadPhoto(a.file_id, function (src) {
+        loadPhoto(a, function (src) {
           aSrc = src; loaded++;
           if (loaded === 2) setupBA(bSrc || aSrc, aSrc || bSrc);
         });
       } else if (works[0] || b || a) {
         var one = works[0] || b || a;
-        loadPhoto(one.file_id, function (src) {
+        loadPhoto(one, function (src) {
           if (!src) {
             root.innerHTML = '<div class="ba-empty"><div class="emoji">◐</div>Скоро здесь будут работы Ti</div>';
             return;
@@ -681,11 +759,11 @@ function loadGallery() {
           chip.className = 'pair-chip';
           chip.innerHTML = '<div class="thumbs"><img class="t1"/><span class="arrow">→</span><img class="t2"/></div><span>было → стало</span>';
           pairs.appendChild(chip);
-          loadPhoto(bi.file_id, function (s) { if (s) chip.querySelector('.t1').src = s; });
-          loadPhoto(ai.file_id, function (s) { if (s) chip.querySelector('.t2').src = s; });
+          loadPhoto(bi, function (s) { if (s) chip.querySelector('.t1').src = s; });
+          loadPhoto(ai, function (s) { if (s) chip.querySelector('.t2').src = s; });
           chip.addEventListener('click', function () {
-            loadPhoto(bi.file_id, function (bs) {
-              loadPhoto(ai.file_id, function (as) {
+            loadPhoto(bi, function (bs) {
+              loadPhoto(ai, function (as) {
                 if (bs && as) setupBA(bs, as);
               });
             });
@@ -871,6 +949,158 @@ document.getElementById('slots').addEventListener('click',function(e){if(e.targe
 document.getElementById('stars').addEventListener('click',function(e){if(e.target.closest('button'))sfxStar()});
 var _sub=document.getElementById('submit').onclick;
 document.getElementById('submit').addEventListener('click',function(){/* success plays after validation in handler */});
+
+
+/* —— кабинет Ti —— */
+var CAB_PASS = '';
+var cabKind = 'before';
+
+function cabPost(payload, cb) {
+  payload.password = CAB_PASS;
+  postAction(payload, function () {});
+  if (!TI_SCRIPT_URL) { if (cb) cb(null); return; }
+  fetch(TI_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function (r) { return r.json(); }).then(function (d) { if (cb) cb(d); })
+    .catch(function () { if (cb) cb(null); });
+}
+
+document.getElementById('cab-open').onclick = function (e) {
+  e.preventDefault();
+  document.getElementById('cab-panel').classList.toggle('show');
+};
+
+document.getElementById('cab-login-btn').onclick = function () {
+  var p = (document.getElementById('cab-pass').value || '').trim();
+  if (!p) { alert('Введите пароль'); return; }
+  CAB_PASS = p;
+  cabPost({ action: 'admin_login' }, function (d) {
+    if (!d || !d.ok) { alert('Неверный пароль'); CAB_PASS = ''; return; }
+    document.getElementById('cab-auth').style.display = 'none';
+    document.getElementById('cab-body').style.display = 'block';
+    cabLoadBooks();
+    try { sfxSuccess(); } catch (e) {}
+  });
+};
+
+document.querySelectorAll('.cab-tabs button').forEach(function (btn) {
+  btn.onclick = function () {
+    document.querySelectorAll('.cab-tabs button').forEach(function (b) { b.classList.remove('on'); });
+    btn.classList.add('on');
+    var t = btn.getAttribute('data-tab');
+    document.getElementById('cab-books').style.display = t === 'books' ? 'block' : 'none';
+    document.getElementById('cab-revs').style.display = t === 'revs' ? 'block' : 'none';
+    document.getElementById('cab-photos').style.display = t === 'photos' ? 'block' : 'none';
+    if (t === 'books') cabLoadBooks();
+    if (t === 'revs') cabLoadRevs();
+  };
+});
+
+document.querySelectorAll('#cab-kind button').forEach(function (btn) {
+  btn.onclick = function () {
+    document.querySelectorAll('#cab-kind button').forEach(function (b) { b.classList.remove('on'); });
+    btn.classList.add('on');
+    cabKind = btn.getAttribute('data-k');
+  };
+});
+
+function cabLoadBooks() {
+  var box = document.getElementById('cab-books');
+  box.innerHTML = '<p class="g-empty">Загрузка…</p>';
+  cabPost({ action: 'admin_pending_bookings' }, function (d) {
+    var items = (d && d.items) || [];
+    if (!items.length) {
+      box.innerHTML = '<p class="g-empty">Нет заявок в ожидании</p>';
+      return;
+    }
+    box.innerHTML = items.map(function (b) {
+      return '<div class="cab-item" data-id="' + b.id + '"><strong>' + (b.name || '') + ' · ' + (b.svc || '') + '</strong>' +
+        '<div class="meta">' + (b.date || '') + ' в ' + (b.time || '') + '<br>' + (b.phone || '') +
+        (b.note ? '<br>' + b.note : '') + (b.username ? '<br>@' + b.username : '') + '</div>' +
+        '<div class="cab-actions">' +
+        '<button type="button" class="cab-ok" data-act="ok">Подтвердить</button>' +
+        '<button type="button" class="cab-no" data-act="no">Отклонить</button></div></div>';
+    }).join('');
+  });
+}
+
+document.getElementById('cab-books').addEventListener('click', function (e) {
+  var btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  var item = btn.closest('.cab-item');
+  var id = item && item.getAttribute('data-id');
+  if (!id) return;
+  var act = btn.getAttribute('data-act') === 'ok' ? 'admin_confirm' : 'admin_reject';
+  cabPost({ action: act, id: id }, function (d) {
+    if (d && d.ok) { try { sfxTap(); } catch (e) {} cabLoadBooks(); }
+    else alert('Не удалось');
+  });
+});
+
+function cabLoadRevs() {
+  var box = document.getElementById('cab-revs');
+  box.innerHTML = '<p class="g-empty">Загрузка…</p>';
+  cabPost({ action: 'admin_pending_reviews' }, function (d) {
+    var items = (d && d.items) || [];
+    if (!items.length) {
+      box.innerHTML = '<p class="g-empty">Нет отзывов на модерации</p>';
+      return;
+    }
+    box.innerHTML = items.map(function (r) {
+      return '<div class="cab-item" data-id="' + r.id + '"><strong>' + (r.name || 'Клиент') +
+        ' · ' + '★★★★★'.slice(0, r.rating || 5) + '</strong><div class="meta">' + (r.text || '') +
+        '</div><div class="cab-actions">' +
+        '<button type="button" class="cab-ok" data-act="ok">Опубликовать</button>' +
+        '<button type="button" class="cab-no" data-act="no">Скрыть</button></div></div>';
+    }).join('');
+  });
+}
+
+document.getElementById('cab-revs').addEventListener('click', function (e) {
+  var btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  var item = btn.closest('.cab-item');
+  var id = item && item.getAttribute('data-id');
+  if (!id) return;
+  var act = btn.getAttribute('data-act') === 'ok' ? 'admin_approve_review' : 'admin_reject_review';
+  cabPost({ action: act, id: id }, function (d) {
+    if (d && d.ok) { cabLoadRevs(); loadReviews(); try { sfxTap(); } catch (e) {} }
+    else alert('Не удалось');
+  });
+});
+
+document.getElementById('cab-upload').onclick = function () {
+  var fileInput = document.getElementById('cab-file');
+  var f = fileInput.files && fileInput.files[0];
+  if (!f) { alert('Выберите фото'); return; }
+  if (f.size > 4.5 * 1024 * 1024) { alert('Файл слишком большой (макс ~4 МБ)'); return; }
+  var st = document.getElementById('cab-up-status');
+  st.textContent = 'Загрузка…';
+  var reader = new FileReader();
+  reader.onload = function () {
+    var dataUrl = String(reader.result || '');
+    cabPost({
+      action: 'admin_upload',
+      kind: cabKind,
+      mime: f.type || 'image/jpeg',
+      caption: (document.getElementById('cab-cap').value || '').trim(),
+      base64: dataUrl
+    }, function (d) {
+      if (d && d.ok) {
+        st.textContent = 'Готово · добавлено в «' + (cabKind === 'before' ? 'до' : cabKind === 'after' ? 'после' : 'работы') + '»';
+        fileInput.value = '';
+        document.getElementById('cab-cap').value = '';
+        loadGallery();
+        try { sfxSuccess(); } catch (e) {}
+      } else {
+        st.textContent = 'Ошибка загрузки' + (d && d.error ? ': ' + d.error : '');
+      }
+    });
+  };
+  reader.readAsDataURL(f);
+};
 
 updateProgress();
 loadGallery();
