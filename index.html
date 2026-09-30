@@ -954,17 +954,27 @@ document.getElementById('submit').addEventListener('click',function(){/* success
 /* —— кабинет Ti —— */
 var CAB_PASS = '';
 var cabKind = 'before';
+/* пароль кабинета (тот же, что ADMIN_PASS в скрипте) */
+var CAB_LOCAL = 'TiStudio2026';
 
 function cabPost(payload, cb) {
   payload.password = CAB_PASS;
-  postAction(payload, function () {});
-  if (!TI_SCRIPT_URL) { if (cb) cb(null); return; }
+  if (!TI_SCRIPT_URL) { if (cb) cb({ ok: false, error: 'no url' }); return; }
   fetch(TI_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  }).then(function (r) { return r.json(); }).then(function (d) { if (cb) cb(d); })
-    .catch(function () { if (cb) cb(null); });
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  }).then(function (r) { return r.text(); }).then(function (text) {
+    var d = null;
+    try { d = JSON.parse(text); } catch (e) {
+      /* Google иногда отдаёт HTML — считаем сетевой сбой */
+      d = { ok: false, error: 'network', raw: (text || '').slice(0, 80) };
+    }
+    if (cb) cb(d);
+  }).catch(function (err) {
+    if (cb) cb({ ok: false, error: 'network' });
+  });
 }
 
 document.getElementById('cab-open').onclick = function (e) {
@@ -975,13 +985,23 @@ document.getElementById('cab-open').onclick = function (e) {
 document.getElementById('cab-login-btn').onclick = function () {
   var p = (document.getElementById('cab-pass').value || '').trim();
   if (!p) { alert('Введите пароль'); return; }
+
+  /* локальная проверка — чтобы UI открывался даже если Google режет CORS */
+  if (p !== CAB_LOCAL) {
+    alert('Неверный пароль');
+    return;
+  }
   CAB_PASS = p;
+  document.getElementById('cab-auth').style.display = 'none';
+  document.getElementById('cab-body').style.display = 'block';
+  try { sfxSuccess(); } catch (e) {}
+
+  /* мягкая проверка сервера (не блокирует вход) */
   cabPost({ action: 'admin_login' }, function (d) {
-    if (!d || !d.ok) { alert('Неверный пароль'); CAB_PASS = ''; return; }
-    document.getElementById('cab-auth').style.display = 'none';
-    document.getElementById('cab-body').style.display = 'block';
+    if (d && d.error === 'auth') {
+      alert('Сервер отклонил пароль — обновите скрипт в Google (ADMIN_PASS)');
+    }
     cabLoadBooks();
-    try { sfxSuccess(); } catch (e) {}
   });
 };
 
