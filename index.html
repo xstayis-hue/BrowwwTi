@@ -324,6 +324,7 @@ input::placeholder,textarea::placeholder{color:#6a5a56}
 .rev-form{margin-top:12px;padding-top:12px;border-top:1px solid rgba(180,120,130,.25)}
 .rev-form label{display:block;font-size:10px;font-weight:600;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;margin:10px 0 6px;text-align:center}
 .rev-form label.left{text-align:left}
+.rev-note{text-align:center;font-size:11px;color:var(--mute);margin-top:10px;letter-spacing:.02em;opacity:.85;line-height:1.35}
 .g-empty{text-align:center;color:var(--mute);font-size:13px;padding:20px 10px;line-height:1.5}
 .g-empty .emoji{font-size:26px;display:block;margin-bottom:8px;opacity:.75}
 
@@ -476,6 +477,7 @@ input::placeholder,textarea::placeholder{color:#6a5a56}
         <label class="left" for="rev-text">Отзыв</label>
         <textarea id="rev-text" maxlength="400" placeholder="Как прошла процедура"></textarea>
         <button type="button" class="btn-soft" id="rev-send">Отправить на модерацию</button>
+        <p class="rev-note">отзыв будет опубликован после модерации</p>
       </div>
     </div>
   </section>
