@@ -570,7 +570,8 @@ input::placeholder,textarea::placeholder{color:#6a5a56}
 </div>
 
 <script>
-var TI_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxx2QvTOfchyy7B9FYq5rCc4GGSME8wX6wNAg1dl7XeMZ_N8WQ2AUUOfUxotF5aGSf-9g/exec';
+/* Бэкенд — Cloudflare Worker (brow-worker.js в репо). Вставь свой URL после деплоя воркера */
+var API_BASE = 'PASTE_WORKER_URL';
 
 if (window.Telegram && Telegram.WebApp) {
   try {
@@ -639,24 +640,13 @@ document.getElementById('stars').addEventListener('click', function (e) {
   });
 });
 
-function postAction(payload, cb) {
-  if (!TI_SCRIPT_URL) { if (cb) cb(false); return; }
-  var body = JSON.stringify(payload);
-  fetch(TI_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, redirect: 'follow' })
-    .then(function (r) { return r.text(); })
-    .then(function (t) {
-      /* Apps Script с доступом «Only myself» отвечает HTML-страницей логина — это НЕ доставка */
-      var ok = false;
-      try { var j = JSON.parse(t); ok = !!j && j.ok !== false; }
-      catch (e) { ok = t.trim().length > 0 && t.indexOf('<html') === -1 && t.indexOf('accounts.google') === -1 && t.indexOf('Sign in') === -1; }
-      if (cb) cb(ok);
-    })
-    .catch(function () {
-      try { fetch(TI_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: body }); } catch (e) {}
-      if (cb) cb(true);
-    });
+function apiPost(path, payload, cb) {
+  if (!API_BASE || API_BASE.indexOf('PASTE') === 0) { if (cb) cb(false, { offline: true }); return; }
+  fetch(API_BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { if (cb) cb(!!j.ok, j); })
+    .catch(function () { if (cb) cb(false, null); });
 }
-
 function loadPhoto(item, cb) {
   if (!item) { cb(''); return; }
   if (item.url) { cb(item.url); return; }
@@ -786,11 +776,7 @@ function starsStr(n) {
 function loadReviews() {
   var box = document.getElementById('rev-list');
   if (!box || !TI_SCRIPT_URL) return;
-  fetch(TI_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'list_reviews' })
-  }).then(function (r) { return r.json(); }).then(function (data) {
+  fetch(API_BASE + '/api/reviews').then(function (r) { return r.json(); }).then(function (data) {
     var list = (data && data.reviews) || [];
     if (!list.length) {
       box.innerHTML = '<div class="g-empty"><span class="emoji">✦</span>Пока тихо — ваш отзыв может быть первым</div>';
@@ -808,7 +794,7 @@ document.getElementById('rev-send').onclick = function () {
   var name = (document.getElementById('rev-name').value || '').trim();
   var text = (document.getElementById('rev-text').value || '').trim();
   if (!text) { alert('Напишите отзыв'); return; }
-  postAction({ action: 'review', name: name || 'Клиент', text: text, rating: rating }, function () {
+  apiPost('/api/review', { name: name || 'Клиент', text: text, rating: rating }, function () {
     document.getElementById('rev-text').value = '';
     alert('Отзыв отправлен на модерацию Ti');
   });
@@ -818,11 +804,18 @@ function loadList() {
   var list = [];
   try { list = JSON.parse(store.getItem(KEY) || '[]'); } catch (e) {}
   var box = document.getElementById('book-list');
-  if (!list.length) { box.innerHTML = '<p style="color:var(--mute);font-size:13px">Пока пусто</p>'; return; }
-  box.innerHTML = list.slice().reverse().map(function (b) {
-    return '<div class="book-item"><strong>' + b.name + ' · ' + b.svc + '</strong><span>' +
-      b.date + ' в ' + b.time + ' · ' + b.phone + (b.note ? ' · ' + b.note : '') + '</span></div>';
-  }).join('');
+  var render = function (items, src) {
+    if (!items.length) { box.innerHTML = '<p style="color:var(--mute);font-size:13px">Пока пусто</p>'; return; }
+    box.innerHTML = items.slice().reverse().map(function (b) {
+      return '<div class="book-item"><strong>' + b.name + ' · ' + b.svc + '</strong><span>' +
+        b.date + ' в ' + b.time + ' · ' + b.phone + (b.note ? ' · ' + b.note : '') + '</span></div>';
+    }).join('') + (src === 'server' ? '<p style="color:var(--mute);font-size:11px">↑ заявки из Telegram-бота (сервер)</p>' : '');
+  };
+  render(list, 'local');
+  if (!API_BASE || API_BASE.indexOf('PASTE') === 0) return;
+  fetch(API_BASE + '/api/list?key=brow-2026').then(function (r) { return r.json(); }).then(function (j) {
+    if (j && j.ok && j.items && j.items.length) render(j.items, 'server');
+  }).catch(function () {});
 }
 
 document.getElementById('submit').onclick = function () {
@@ -846,10 +839,11 @@ document.getElementById('submit').onclick = function () {
   document.getElementById('overlay').classList.add('show');
   loadList();
   var tgUser = (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) || {};
-  postAction({
+  apiPost('/api/book', {
     action: 'book', name: name, phone: phone, note: note, svc: svc, price: price,
     date: date, time: time, at: row.at, userId: tgUser.id || '', username: tgUser.username || ''
-  }, function (delivered) {
+  }, function (ok, data) {
+    const delivered = ok && data && data.delivered;
     if (delivered) {
       try { store.removeItem('ti_pending'); } catch (e) {}
       document.getElementById('pending-banner').classList.remove('show');
@@ -858,7 +852,7 @@ document.getElementById('submit').onclick = function () {
     } else {
       try { store.setItem('ti_pending', '1'); } catch (e) {}
       document.getElementById('pending-banner').classList.add('show');
-      okText.textContent = name + ', заявка сохранена, но пока НЕ доставлена мастеру — напишите ей напрямую в Telegram.';
+      okText.textContent = name + ', заявка сохранена. Уведомление придёт мастеру, как только подключат бота.';
       try { Telegram.WebApp.HapticFeedback.notificationOccurred('error'); } catch (e) {}
     }
   });
