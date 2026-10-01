@@ -642,17 +642,19 @@ document.getElementById('stars').addEventListener('click', function (e) {
 function postAction(payload, cb) {
   if (!TI_SCRIPT_URL) { if (cb) cb(false); return; }
   var body = JSON.stringify(payload);
-  try {
-    fetch(TI_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, redirect: 'follow' })
-      .then(function () { if (cb) cb(true); })
-      .catch(function () {
-        try { fetch(TI_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: body }); } catch (e) {}
-        if (cb) cb(true);
-      });
-  } catch (e) {
-    try { fetch(TI_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: body }); } catch (e2) {}
-    if (cb) cb(false);
-  }
+  fetch(TI_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, redirect: 'follow' })
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      /* Apps Script с доступом «Only myself» отвечает HTML-страницей логина — это НЕ доставка */
+      var ok = false;
+      try { var j = JSON.parse(t); ok = !!j && j.ok !== false; }
+      catch (e) { ok = t.trim().length > 0 && t.indexOf('<html') === -1 && t.indexOf('accounts.google') === -1 && t.indexOf('Sign in') === -1; }
+      if (cb) cb(ok);
+    })
+    .catch(function () {
+      try { fetch(TI_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: body }); } catch (e) {}
+      if (cb) cb(true);
+    });
 }
 
 function loadPhoto(item, cb) {
@@ -839,23 +841,26 @@ document.getElementById('submit').onclick = function () {
   list.push(row);
   try { store.setItem(KEY, JSON.stringify(list)); } catch (e) {}
 
-  document.getElementById('ok-text').textContent =
-    name + ', заявка на «' + svc + '» · ' + date + ' в ' + time +
-    ' отправлена. Ti подтвердит — бот напишет вам.';
+  var okText = document.getElementById('ok-text');
+  okText.textContent = name + ', заявка на «' + svc + '» · ' + date + ' в ' + time + '. Отправляю мастеру…';
   document.getElementById('overlay').classList.add('show');
-  document.getElementById('pending-banner').classList.add('show');
-  try { store.setItem('ti_pending', '1'); } catch (e) {}
   loadList();
-  try {
-    if (Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback)
-      Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-    sfxSuccess();
-  } catch (e) {}
-
   var tgUser = (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) || {};
   postAction({
     action: 'book', name: name, phone: phone, note: note, svc: svc, price: price,
     date: date, time: time, at: row.at, userId: tgUser.id || '', username: tgUser.username || ''
+  }, function (delivered) {
+    if (delivered) {
+      try { store.removeItem('ti_pending'); } catch (e) {}
+      document.getElementById('pending-banner').classList.remove('show');
+      okText.textContent = name + ', заявка на «' + svc + '» · ' + date + ' в ' + time + ' доставлена ✓ Ti подтвердит — бот напишет вам.';
+      try { Telegram.WebApp.HapticFeedback.notificationOccurred('success'); sfxSuccess(); } catch (e) {}
+    } else {
+      try { store.setItem('ti_pending', '1'); } catch (e) {}
+      document.getElementById('pending-banner').classList.add('show');
+      okText.textContent = name + ', заявка сохранена, но пока НЕ доставлена мастеру — напишите ей напрямую в Telegram.';
+      try { Telegram.WebApp.HapticFeedback.notificationOccurred('error'); } catch (e) {}
+    }
   });
 };
 
