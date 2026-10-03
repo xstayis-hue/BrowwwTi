@@ -445,8 +445,8 @@ function goStep(n){
     var s=SERVICES[sel.svc];
     document.getElementById('sum').innerHTML='<b>'+esc(s.name)+'</b> · '+s.price+'<br>📅 <b>'+sel.date+'</b> в <b>'+sel.time+'</b> · '+s.dur;
   }
-  for (var i=1;i<=4;i++) document.getElementById('st'+i).classList.remove('on');
-  document.getElementById('st'+n).classList.add('on');
+  for (var i=1;i<=3;i++) document.getElementById('st'+i).classList.remove('on');
+  document.getElementById(n===4?'stDone':'st'+n).classList.add('on');
   document.getElementById('progBar').style.width=(n===4?100:(n-1)*33.4)+'%';
   document.getElementById('progLbl').textContent=n===4?'готово ✦':n+' / 3 · '+(n===1?'услуга':n===2?'дата и время':'контакты');
   renderTimes();
@@ -464,7 +464,7 @@ function closeBook(){
   document.body.style.overflow='';
 }
 document.getElementById('bookOv').addEventListener('click',function(e){ if(e.target===this) closeBook(); });
-document.getElementById('stickyCta').querySelector('.btn').onclick=function(){ openBook(); };
+document.querySelector('.sticky .btn').onclick=function(){ openBook(); };
 function submitBook(){
   var name=document.getElementById('bName').value.trim();
   var phone=document.getElementById('bPhone').value.trim();
@@ -474,7 +474,7 @@ function submitBook(){
   api('/api/book',{name:name,phone:phone,svc:s.name,price:s.price,date:sel.date,time:sel.time,note:document.getElementById('bNote').value.trim()})
     .then(function(j){
       btn.disabled=false; btn.textContent='Записаться ✦';
-      if (j.offline){ toast('Демо: сервер не подключен'); doneText(name,s); return; }
+      if (j.offline){ toast('Сервер не подключён — заявка не отправлена'); return; }
       if (j.ok){ toast('✦ Заявка отправлена'); doneText(name,s); }
       else toast('Не удалось отправить — попробуй ещё раз');
     });
