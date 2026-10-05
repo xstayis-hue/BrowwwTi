@@ -1,0 +1,21 @@
+# зависимости
+node_modules/
+npm-debug.log*
+
+# секреты и локальные конфиги
+.env
+.env.*
+!.env.example
+*.local
+
+# служебные данные
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.log
+
+# системное
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
